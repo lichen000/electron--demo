@@ -1,22 +1,36 @@
-const {app, BrowserWindow, ipcMain, Menu, nativeImage, shell, Tray} = require('electron');
+import { app, BrowserWindow, Menu, nativeImage, shell, Tray} from 'electron'
+
+/**
+ * Set `__static` path to static files in production
+ * https://simulatedgreg.gitbooks.io/electron-vue/content/en/using-static-assets.html
+ */
+if (process.env.NODE_ENV !== 'development') {
+  global.__static = require('path').join(__dirname, '/static').replace(/\\/g, '\\\\')
+}
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let mainWindow;
+let mainWindow = null;
 let tray = null;
 
-/**
- *
- */
-const createWindow = () => {
-    // Create the browser window.
-    mainWindow = new BrowserWindow({
-        width: 800,
-        height: 600,
-    });
+const winURL = process.env.NODE_ENV === 'development'
+  ? `http://localhost:9080`
+  : `file://${__dirname}/index.html`;
 
-    // and load the index.html of the app.
-    mainWindow.loadURL(`file://${__dirname}/index.html`);
+/**
+ * 打开应用程序主界面
+ */
+function createMainWindow () {
+  /**
+   * Initial window options
+   */
+  mainWindow = new BrowserWindow({
+    height: 750,
+    useContentSize: true,
+    width: 1200
+  });
+
+  mainWindow.loadURL(winURL);
 
     // Open the DevTools.
     // mainWindow.webContents.openDevTools();
@@ -32,7 +46,7 @@ const createWindow = () => {
         // 与通常的浏览器不同,会提示给用户一个消息框,
         //返回非空值将默认取消关闭
         //建议使用对话框 API 让用户确认关闭应用程序.
-        e.returnValue = false // 相当于 `return false` ，但是不推荐使用
+        e.returnValue = false; // 相当于 `return false` ，但是不推荐使用
     };
 
     // Emitted when the window is closed.
@@ -43,13 +57,13 @@ const createWindow = () => {
 
         mainWindow = null;
     });
-};
+}
 
 /**
  *
  */
 const initTray = () => {
-    let image = nativeImage.createFromPath('./static/icon/favicon.ico');
+    const image = nativeImage.createFromPath('./static/icon/favicon.ico');
     tray = new Tray(image);
 
     const trayMenuTemplate = [
@@ -93,11 +107,12 @@ if (shouldQuit) {
     app.quit();
 }
 
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', function () {
-    createWindow();
+    createMainWindow();
     initTray();
 });
 
@@ -114,6 +129,6 @@ app.on('activate', () => {
     // On OS X it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
     if (mainWindow === null) {
-        createWindow();
+        createMainWindow();
     }
 });
